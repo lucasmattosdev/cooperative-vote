@@ -1,6 +1,7 @@
 package dev.lucasmattos.cooperative_vote.infra.gateway.agenda_vote;
 
 import dev.lucasmattos.cooperative_vote.core.domain.AgendaVote;
+import dev.lucasmattos.cooperative_vote.core.domain.AgendaVoteValue;
 import dev.lucasmattos.cooperative_vote.core.gateway.AgendaVoteGateway;
 import dev.lucasmattos.cooperative_vote.infra.config.stereotype.Gateway;
 import java.util.UUID;
@@ -14,6 +15,11 @@ public class DatabaseAgendaVoteGateway implements AgendaVoteGateway {
     @Override
     public boolean existsByAgendaAndAssociate(UUID agendaId, UUID associateId) {
         return agendaVoteRepository.existsByAgenda_idAndAssociate_id(agendaId, associateId);
+    }
+
+    @Override
+    public long countByAgendaAndValue(UUID agendaId, AgendaVoteValue value) {
+        return agendaVoteRepository.countByAgenda_idAndValue(agendaId, value);
     }
 
     @Override

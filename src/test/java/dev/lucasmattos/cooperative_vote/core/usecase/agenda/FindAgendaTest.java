@@ -7,10 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import dev.lucasmattos.cooperative_vote.core.domain.Agenda;
-import dev.lucasmattos.cooperative_vote.core.domain.AgendaVote;
 import dev.lucasmattos.cooperative_vote.core.gateway.AgendaGateway;
+import dev.lucasmattos.cooperative_vote.core.gateway.AgendaVoteGateway;
 import dev.lucasmattos.cooperative_vote.core.usecase.exception.NotFoundException;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -24,6 +23,9 @@ class FindAgendaTest {
 
     @Mock
     AgendaGateway agendaGateway;
+
+    @Mock
+    AgendaVoteGateway agendaVoteGateway;
 
     @InjectMocks
     FindAgenda findAgenda;
@@ -43,6 +45,8 @@ class FindAgendaTest {
         final UUID agendaId = UUID.randomUUID();
         final Agenda agenda = Agenda.builder().id(agendaId).build();
         when(agendaGateway.findById(agendaId)).thenReturn(Optional.of(agenda));
+        when(agendaVoteGateway.countByAgendaAndValue(agendaId, YES)).thenReturn(0L);
+        when(agendaVoteGateway.countByAgendaAndValue(agendaId, NO)).thenReturn(0L);
 
         final FindAgenda.Response result = findAgenda.execute(agendaId);
 
@@ -55,14 +59,9 @@ class FindAgendaTest {
     void shouldFindAgendaWithVotes() {
         final UUID agendaId = UUID.randomUUID();
         final Agenda agenda = Agenda.builder().id(agendaId).build();
-        agenda.getAgendaVotes()
-                .addAll(List.of(
-                        AgendaVote.builder().value(YES).build(),
-                        AgendaVote.builder().value(YES).build(),
-                        AgendaVote.builder().value(NO).build(),
-                        AgendaVote.builder().value(NO).build(),
-                        AgendaVote.builder().value(NO).build()));
         when(agendaGateway.findById(agendaId)).thenReturn(Optional.of(agenda));
+        when(agendaVoteGateway.countByAgendaAndValue(agendaId, YES)).thenReturn(2L);
+        when(agendaVoteGateway.countByAgendaAndValue(agendaId, NO)).thenReturn(3L);
 
         final FindAgenda.Response result = findAgenda.execute(agendaId);
 
