@@ -52,13 +52,14 @@ class OpenSessionInAgendaTest {
     @Test
     void shouldThrownExceptionWhenHasConflict() {
         final UUID agendaId = UUID.randomUUID();
-        final Agenda agenda = Agenda.builder().id(agendaId).build();
         final UUID agendaSessionExistent = UUID.randomUUID();
-        agenda.getAgendaSessions()
-                .add(AgendaSession.builder()
+        final Agenda agenda = Agenda.builder()
+                .id(agendaId)
+                .lastAgendaSession(AgendaSession.builder()
                         .id(agendaSessionExistent)
                         .endAt(ZonedDateTime.now().plusMinutes(1))
-                        .build());
+                        .build())
+                .build();
         when(agendaGateway.findById(agendaId)).thenReturn(Optional.of(agenda));
 
         assertThatThrownBy(() -> openSessionInAgenda.execute(agendaId, new OpenSessionInAgenda.Request(0L)))
@@ -67,15 +68,37 @@ class OpenSessionInAgendaTest {
     }
 
     @Test
-    void shouldSaveWithSucess() {
+    void shouldSaveWithSucessWhenExistsOldSession() {
+        final UUID agendaId = UUID.randomUUID();
+        final Agenda agenda = Agenda.builder()
+                .id(agendaId)
+                .lastAgendaSession(AgendaSession.builder()
+                        .id(UUID.randomUUID())
+                        .endAt(ZonedDateTime.now().minusSeconds(1))
+                        .build())
+                .build();
+        final ZonedDateTime now = ZonedDateTime.now();
+        when(agendaGateway.findById(agendaId)).thenReturn(Optional.of(agenda));
+
+        try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {
+            mockedStatic.when(ZonedDateTime::now).thenReturn(now);
+
+            openSessionInAgenda.execute(agendaId, new OpenSessionInAgenda.Request(10L));
+
+            verify(agendaSessionGateway).save(agendaSessionCaptor.capture());
+            final AgendaSession agendaSessionSaved = agendaSessionCaptor.getValue();
+            assertEquals(agenda, agendaSessionSaved.getAgenda());
+            assertEquals(10L, agendaSessionSaved.getDurationInMinutes());
+            assertEquals(now, agendaSessionSaved.getStartAt());
+            assertEquals(now.plusMinutes(10L), agendaSessionSaved.getEndAt());
+        }
+    }
+
+    @Test
+    void shouldSaveNewSessionWithSucess() {
         final UUID agendaId = UUID.randomUUID();
         final Agenda agenda = Agenda.builder().id(agendaId).build();
         final ZonedDateTime now = ZonedDateTime.now();
-        agenda.getAgendaSessions()
-                .add(AgendaSession.builder()
-                        .id(UUID.randomUUID())
-                        .endAt(ZonedDateTime.now().minusSeconds(1))
-                        .build());
         when(agendaGateway.findById(agendaId)).thenReturn(Optional.of(agenda));
 
         try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {

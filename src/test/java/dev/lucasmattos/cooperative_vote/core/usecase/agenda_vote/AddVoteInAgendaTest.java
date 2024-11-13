@@ -6,10 +6,11 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import dev.lucasmattos.cooperative_vote.core.domain.Agenda;
+import dev.lucasmattos.cooperative_vote.core.domain.AgendaSession;
 import dev.lucasmattos.cooperative_vote.core.domain.AgendaVote;
 import dev.lucasmattos.cooperative_vote.core.domain.AgendaVoteValue;
 import dev.lucasmattos.cooperative_vote.core.domain.Associate;
-import dev.lucasmattos.cooperative_vote.core.gateway.AgendaSessionGateway;
+import dev.lucasmattos.cooperative_vote.core.gateway.AgendaGateway;
 import dev.lucasmattos.cooperative_vote.core.gateway.AgendaVoteGateway;
 import dev.lucasmattos.cooperative_vote.core.gateway.AssociateGateway;
 import dev.lucasmattos.cooperative_vote.core.usecase.exception.NotFoundException;
@@ -36,7 +37,7 @@ class AddVoteInAgendaTest {
     AssociateGateway associateGateway;
 
     @Mock
-    AgendaSessionGateway agendaSessionGateway;
+    AgendaGateway agendaGateway;
 
     @InjectMocks
     AddVoteInAgenda addVoteInAgenda;
@@ -70,7 +71,7 @@ class AddVoteInAgendaTest {
     }
 
     @Test
-    void shouldThrownExceptionWhenNotHasOpenSession() {
+    void shouldThrownExceptionWhenNotFoundAgenda() {
         final UUID agendaId = UUID.randomUUID();
         final UUID associateId = UUID.randomUUID();
         final ZonedDateTime now = ZonedDateTime.now();
@@ -78,8 +79,27 @@ class AddVoteInAgendaTest {
                 .thenReturn(Optional.of(Associate.builder().build()));
         when(agendaVoteGateway.existsByAgendaAndAssociate(agendaId, associateId))
                 .thenReturn(false);
-        when(agendaSessionGateway.findAgendaByAgendaIdAndSessionOpenInDate(agendaId, now))
-                .thenReturn(Optional.empty());
+        when(agendaGateway.findById(agendaId)).thenReturn(Optional.empty());
+
+        try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {
+            mockedStatic.when(ZonedDateTime::now).thenReturn(now);
+            assertThatThrownBy(() -> addVoteInAgenda.execute(agendaId, AgendaVoteValue.YES, associateId))
+                    .isInstanceOf(UseCaseException.class)
+                    .hasMessage("The Agenda with id " + agendaId + " was not found");
+        }
+    }
+
+    @Test
+    void shouldThrownExceptionWhenNotFoundAgendaSession() {
+        final UUID agendaId = UUID.randomUUID();
+        final UUID associateId = UUID.randomUUID();
+        final ZonedDateTime now = ZonedDateTime.now();
+        when(associateGateway.findById(associateId))
+                .thenReturn(Optional.of(Associate.builder().build()));
+        when(agendaVoteGateway.existsByAgendaAndAssociate(agendaId, associateId))
+                .thenReturn(false);
+        when(agendaGateway.findById(agendaId))
+                .thenReturn(Optional.of(Agenda.builder().build()));
 
         try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {
             mockedStatic.when(ZonedDateTime::now).thenReturn(now);
@@ -90,19 +110,45 @@ class AddVoteInAgendaTest {
     }
 
     @Test
+    void shouldThrownExceptionWhenAgendaSessionEnd() {
+        final UUID agendaId = UUID.randomUUID();
+        final UUID associateId = UUID.randomUUID();
+        final ZonedDateTime now = ZonedDateTime.now();
+        when(associateGateway.findById(associateId))
+                .thenReturn(Optional.of(Associate.builder().build()));
+        when(agendaVoteGateway.existsByAgendaAndAssociate(agendaId, associateId))
+                .thenReturn(false);
+        when(agendaGateway.findById(agendaId))
+                .thenReturn(Optional.of(Agenda.builder()
+                        .lastAgendaSession(AgendaSession.builder()
+                                .endAt(now.minusSeconds(1))
+                                .build())
+                        .build()));
+
+        try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {
+            mockedStatic.when(ZonedDateTime::now).thenReturn(now);
+            assertThatThrownBy(() -> addVoteInAgenda.execute(agendaId, AgendaVoteValue.YES, associateId))
+                    .isInstanceOf(UseCaseException.class)
+                    .hasMessage("The session for this agenda is already end");
+        }
+    }
+
+    @Test
     void shouldSaveWithSucess() {
         final UUID agendaId = UUID.randomUUID();
         final UUID associateId = UUID.randomUUID();
         final ZonedDateTime now = ZonedDateTime.now();
-        final Agenda agenda = Agenda.builder().build();
+        final Agenda agenda = Agenda.builder()
+                .lastAgendaSession(
+                        AgendaSession.builder().endAt(now.plusSeconds(1)).build())
+                .build();
         final Associate associate = Associate.builder().build();
         final AgendaVote expectedResult =
                 AgendaVote.builder().id(UUID.randomUUID()).build();
         when(associateGateway.findById(associateId)).thenReturn(Optional.of(associate));
         when(agendaVoteGateway.existsByAgendaAndAssociate(agendaId, associateId))
                 .thenReturn(false);
-        when(agendaSessionGateway.findAgendaByAgendaIdAndSessionOpenInDate(agendaId, now))
-                .thenReturn(Optional.of(agenda));
+        when(agendaGateway.findById(agendaId)).thenReturn(Optional.of(agenda));
         when(agendaVoteGateway.save(agendaVoteCaptor.capture())).thenReturn(expectedResult);
 
         try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {
