@@ -11,6 +11,7 @@ import dev.lucasmattos.cooperative_vote.core.gateway.AgendaSessionGateway;
 import dev.lucasmattos.cooperative_vote.core.usecase.exception.ConflictException;
 import dev.lucasmattos.cooperative_vote.core.usecase.exception.NotFoundException;
 import dev.lucasmattos.cooperative_vote.infra.config.stereotype.UseCase;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -26,6 +27,7 @@ public class OpenSessionInAgenda {
     final AgendaGateway agendaGateway;
     final AgendaSessionGateway agendaSessionGateway;
 
+    @Schema(name = "OpenSessionInAgenda.Request")
     public record Request(@Positive Long minutes) {}
 
     @Transactional

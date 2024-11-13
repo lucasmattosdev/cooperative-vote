@@ -9,6 +9,8 @@ import dev.lucasmattos.cooperative_vote.core.gateway.AgendaVoteGateway;
 import dev.lucasmattos.cooperative_vote.core.usecase.exception.NotFoundException;
 import dev.lucasmattos.cooperative_vote.infra.config.stereotype.UseCase;
 import java.util.UUID;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
 
 @UseCase
@@ -17,6 +19,7 @@ public class FindAgenda {
     private final AgendaGateway agendaGateway;
     private final AgendaVoteGateway agendaVoteGateway;
 
+    @Schema(name = "FindAgenda.Response")
     public record Response(UUID id, long votedYes, long votedNo) {}
 
     public Response execute(final UUID agendaId) {
