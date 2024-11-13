@@ -45,7 +45,7 @@ class AgendaControllerTest {
 
         mockMvc.perform(post("/agenda").contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(Matchers.is(response.getId().toString())));
+                .andExpect(jsonPath("$.id").value(Matchers.is(response.id().toString())));
     }
 
     @Test

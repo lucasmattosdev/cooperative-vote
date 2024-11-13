@@ -30,6 +30,6 @@ class CreateAgendaTest {
         final CreateAgenda.Response result = createAgenda.execute();
 
         verify(agendaGateway).save(new Agenda());
-        assertEquals(agenda.getId(), result.getId());
+        assertEquals(agenda.getId(), result.id());
     }
 }

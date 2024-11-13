@@ -14,11 +14,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.time.ZonedDateTime;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.springframework.validation.annotation.Validated;
 
 @UseCase
@@ -28,11 +24,7 @@ public class OpenSessionInAgenda {
     final AgendaGateway agendaGateway;
     final AgendaSessionGateway agendaSessionGateway;
 
-    @Data
-    public static class Request {
-        @Positive
-        Long minutes;
-    }
+    public record Request(@Positive Long minutes) {}
 
     public AgendaSession execute(final UUID agendaId, @Valid final Request request) {
         final Agenda agenda =

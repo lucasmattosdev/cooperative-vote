@@ -46,9 +46,9 @@ class FindAgendaTest {
 
         final FindAgenda.Response result = findAgenda.execute(agendaId);
 
-        assertEquals(agendaId, result.getId());
-        assertEquals(0L, result.getVotedYes());
-        assertEquals(0L, result.getVotedNo());
+        assertEquals(agendaId, result.id());
+        assertEquals(0L, result.votedYes());
+        assertEquals(0L, result.votedNo());
     }
 
     @Test
@@ -66,8 +66,8 @@ class FindAgendaTest {
 
         final FindAgenda.Response result = findAgenda.execute(agendaId);
 
-        assertEquals(agendaId, result.getId());
-        assertEquals(2L, result.getVotedYes());
-        assertEquals(3L, result.getVotedNo());
+        assertEquals(agendaId, result.id());
+        assertEquals(2L, result.votedYes());
+        assertEquals(3L, result.votedNo());
     }
 }
