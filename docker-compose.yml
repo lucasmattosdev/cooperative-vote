@@ -1,0 +1,25 @@
+services:
+  cooperative-vote-db:
+    restart: always
+    image: postgres:16.4
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: cooperative_vote
+      POSTGRES_USER: cooperativevote
+      POSTGRES_PASSWORD: default
+
+  cooperative-vote:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - cooperative-vote-db
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://cooperative-vote-db:5432/cooperative_vote
+      DB_USERNAME: cooperativevote
+      DB_PASSWORD: default
