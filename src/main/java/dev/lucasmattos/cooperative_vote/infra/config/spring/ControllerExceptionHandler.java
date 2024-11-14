@@ -1,8 +1,7 @@
 package dev.lucasmattos.cooperative_vote.infra.config.spring;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-
 import dev.lucasmattos.cooperative_vote.core.usecase.exception.UseCaseException;
+import dev.lucasmattos.cooperative_vote.infra.gateway.exception.GatewayException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +24,18 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler(UseCaseException.class)
     public ResponseEntity<ApiError> handleUseCaseException(final UseCaseException exception) {
-        LOGGER.warn(BAD_REQUEST.getReasonPhrase(), exception);
+        LOGGER.warn("Use case exception", exception);
+
+        final ApiError apiError = new ApiError(
+                exception.getErrorCode(),
+                exception.getMessage(),
+                exception.getHttpStatus().value());
+        return ResponseEntity.status(apiError.getStatus()).body(apiError);
+    }
+
+    @ExceptionHandler(GatewayException.class)
+    public ResponseEntity<ApiError> handleUseCaseException(final GatewayException exception) {
+        LOGGER.warn("Gateway exception", exception);
 
         final ApiError apiError = new ApiError(
                 exception.getErrorCode(),
