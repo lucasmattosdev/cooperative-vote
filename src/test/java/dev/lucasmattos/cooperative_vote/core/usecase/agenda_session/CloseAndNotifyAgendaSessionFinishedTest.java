@@ -1,5 +1,7 @@
 package dev.lucasmattos.cooperative_vote.core.usecase.agenda_session;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -43,7 +45,7 @@ class CloseAndNotifyAgendaSessionFinishedTest {
     void shouldDoNothingWhenNotExistsOpen() {
         when(agendaSessionGateway.findAllWithStatusOpenAndEndAtBeforeNow()).thenReturn(List.of());
 
-        closeAndNotifyAgendaSessionFinished.execute();
+        assertDoesNotThrow(() -> closeAndNotifyAgendaSessionFinished.execute());
     }
 
     @Test
@@ -82,5 +84,38 @@ class CloseAndNotifyAgendaSessionFinishedTest {
                 .send(new CloseAndNotifyAgendaSessionFinished.Response(agendaSessionOne.getId(), 10L, 20L));
         verify(votingSessionEndedQueueClient)
                 .send(new CloseAndNotifyAgendaSessionFinished.Response(agendaSessionTwo.getId(), 81723L, 991029L));
+    }
+
+    @Test
+    void shouldExecuteFirstAndThrownExceptionBySecond() {
+        final AgendaSession agendaSessionOne = AgendaSession.builder()
+                .agenda(Agenda.builder().id(UUID.randomUUID()).build())
+                .build();
+        final AgendaSession agendaSessionTwo = AgendaSession.builder()
+                .agenda(Agenda.builder().id(UUID.randomUUID()).build())
+                .build();
+        when(agendaSessionGateway.findAllWithStatusOpenAndEndAtBeforeNow())
+                .thenReturn(List.of(agendaSessionOne, agendaSessionTwo));
+        when(agendaVoteGateway.countByAgendaAndValue(
+                        agendaSessionOne.getAgenda().getId(), AgendaVoteValue.YES))
+                .thenReturn(10L);
+        when(agendaVoteGateway.countByAgendaAndValue(
+                        agendaSessionOne.getAgenda().getId(), AgendaVoteValue.NO))
+                .thenReturn(20L);
+        when(agendaVoteGateway.countByAgendaAndValue(
+                        agendaSessionTwo.getAgenda().getId(), AgendaVoteValue.YES))
+                .thenThrow(new RuntimeException("any Exception"));
+
+        assertThatThrownBy(() -> closeAndNotifyAgendaSessionFinished.execute())
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("any Exception");
+
+        verify(agendaSessionGateway, times(1)).save(agendaSessionCaptor.capture());
+        final List<AgendaSession> capturedAgendaSessions = agendaSessionCaptor.getAllValues();
+        final AgendaSession capturedAgendaSessionOne = capturedAgendaSessions.get(0);
+        assertEquals(AgendaSessionStatus.CLOSED, capturedAgendaSessionOne.getStatus());
+
+        verify(votingSessionEndedQueueClient)
+                .send(new CloseAndNotifyAgendaSessionFinished.Response(agendaSessionOne.getId(), 10L, 20L));
     }
 }
