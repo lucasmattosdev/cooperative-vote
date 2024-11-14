@@ -1,5 +1,6 @@
 package dev.lucasmattos.cooperative_vote.core.usecase.agenda_session;
 
+import static dev.lucasmattos.cooperative_vote.core.domain.AgendaSessionStatus.OPEN;
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
@@ -42,6 +43,8 @@ public class OpenSessionInAgenda {
         final AgendaSession agendaSessionSaved = agendaSessionGateway.save(AgendaSession.builder()
                 .agenda(agenda)
                 .durationInMinutes(minutes)
+                .status(OPEN)
+                .version(0L)
                 .startAt(startAt)
                 .endAt(startAt.plusMinutes(minutes))
                 .build());
