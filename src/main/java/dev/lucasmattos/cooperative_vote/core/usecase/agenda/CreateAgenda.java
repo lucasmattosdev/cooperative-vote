@@ -3,9 +3,8 @@ package dev.lucasmattos.cooperative_vote.core.usecase.agenda;
 import dev.lucasmattos.cooperative_vote.core.domain.Agenda;
 import dev.lucasmattos.cooperative_vote.core.gateway.AgendaGateway;
 import dev.lucasmattos.cooperative_vote.infra.config.stereotype.UseCase;
-import java.util.UUID;
-
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 
 @UseCase
