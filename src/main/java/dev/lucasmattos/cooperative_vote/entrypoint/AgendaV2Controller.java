@@ -11,14 +11,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * @deprecated Refatoring frontends to use find agenda with last session
- */
-@Deprecated(since = "v2")
 @RestController
-@RequestMapping("/agenda")
+@RequestMapping("/v2/agenda")
 @RequiredArgsConstructor
-public class AgendaController {
+public class AgendaV2Controller {
 
     private final CreateAgenda createAgenda;
     private final FindAgenda findAgenda;
@@ -31,7 +27,7 @@ public class AgendaController {
 
     @Operation(summary = "Mostra o resultado da pauta contabilizando todos os votos")
     @GetMapping("/{agendaId}")
-    public FindAgenda.Response getFindAgenda(@PathVariable final UUID agendaId) {
-        return findAgenda.execute(agendaId);
+    public FindAgenda.ResponseV2 getFindAgenda(@PathVariable final UUID agendaId) {
+        return findAgenda.executeV2(agendaId);
     }
 }
