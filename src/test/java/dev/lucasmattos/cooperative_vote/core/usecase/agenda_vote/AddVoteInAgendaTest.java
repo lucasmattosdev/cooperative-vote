@@ -1,5 +1,7 @@
 package dev.lucasmattos.cooperative_vote.core.usecase.agenda_vote;
 
+import static dev.lucasmattos.cooperative_vote.core.domain.external.User.UserStatus.ABLE_TO_VOTE;
+import static dev.lucasmattos.cooperative_vote.core.domain.external.User.UserStatus.UNABLE_TO_VOTE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mockStatic;
@@ -10,9 +12,11 @@ import dev.lucasmattos.cooperative_vote.core.domain.AgendaSession;
 import dev.lucasmattos.cooperative_vote.core.domain.AgendaVote;
 import dev.lucasmattos.cooperative_vote.core.domain.AgendaVoteValue;
 import dev.lucasmattos.cooperative_vote.core.domain.Associate;
+import dev.lucasmattos.cooperative_vote.core.domain.external.User;
 import dev.lucasmattos.cooperative_vote.core.gateway.AgendaGateway;
 import dev.lucasmattos.cooperative_vote.core.gateway.AgendaVoteGateway;
 import dev.lucasmattos.cooperative_vote.core.gateway.AssociateGateway;
+import dev.lucasmattos.cooperative_vote.core.gateway.UserGateway;
 import dev.lucasmattos.cooperative_vote.core.usecase.exception.NotFoundException;
 import dev.lucasmattos.cooperative_vote.core.usecase.exception.UseCaseException;
 import java.time.ZonedDateTime;
@@ -38,6 +42,9 @@ class AddVoteInAgendaTest {
 
     @Mock
     AgendaGateway agendaGateway;
+
+    @Mock
+    UserGateway userGateway;
 
     @InjectMocks
     AddVoteInAgenda addVoteInAgenda;
@@ -71,15 +78,46 @@ class AddVoteInAgendaTest {
     }
 
     @Test
+    void shouldThrownExceptionWhenAssociateNotAbleToVote() {
+        final UUID agendaId = UUID.randomUUID();
+        final UUID associateId = UUID.randomUUID();
+        final Associate associate = Associate.builder().document("12345678900").build();
+        when(associateGateway.findById(associateId)).thenReturn(Optional.of(associate));
+        when(agendaVoteGateway.existsByAgendaAndAssociate(agendaId, associateId))
+                .thenReturn(false);
+        when(userGateway.findBy(associate.getDocument())).thenReturn(Optional.of(new User(UNABLE_TO_VOTE)));
+
+        assertThatThrownBy(() -> addVoteInAgenda.execute(agendaId, AgendaVoteValue.YES, associateId))
+                .isInstanceOf(UseCaseException.class)
+                .hasMessage("The associate is not able to vote");
+    }
+
+    @Test
+    void shouldThrownExceptionWhenAssociateNotFoundOnUserGateway() {
+        final UUID agendaId = UUID.randomUUID();
+        final UUID associateId = UUID.randomUUID();
+        final Associate associate = Associate.builder().document("12345678900").build();
+        when(associateGateway.findById(associateId)).thenReturn(Optional.of(associate));
+        when(agendaVoteGateway.existsByAgendaAndAssociate(agendaId, associateId))
+                .thenReturn(false);
+        when(userGateway.findBy(associate.getDocument())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> addVoteInAgenda.execute(agendaId, AgendaVoteValue.YES, associateId))
+                .isInstanceOf(UseCaseException.class)
+                .hasMessage("The associate is not able to vote");
+    }
+
+    @Test
     void shouldThrownExceptionWhenNotFoundAgenda() {
         final UUID agendaId = UUID.randomUUID();
         final UUID associateId = UUID.randomUUID();
         final ZonedDateTime now = ZonedDateTime.now();
-        when(associateGateway.findById(associateId))
-                .thenReturn(Optional.of(Associate.builder().build()));
+        final Associate associate = Associate.builder().document("12345678900").build();
+        when(associateGateway.findById(associateId)).thenReturn(Optional.of(associate));
         when(agendaVoteGateway.existsByAgendaAndAssociate(agendaId, associateId))
                 .thenReturn(false);
         when(agendaGateway.findById(agendaId)).thenReturn(Optional.empty());
+        when(userGateway.findBy(associate.getDocument())).thenReturn(Optional.of(new User(ABLE_TO_VOTE)));
 
         try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {
             mockedStatic.when(ZonedDateTime::now).thenReturn(now);
@@ -94,12 +132,13 @@ class AddVoteInAgendaTest {
         final UUID agendaId = UUID.randomUUID();
         final UUID associateId = UUID.randomUUID();
         final ZonedDateTime now = ZonedDateTime.now();
-        when(associateGateway.findById(associateId))
-                .thenReturn(Optional.of(Associate.builder().build()));
+        final Associate associate = Associate.builder().document("12345678900").build();
+        when(associateGateway.findById(associateId)).thenReturn(Optional.of(associate));
         when(agendaVoteGateway.existsByAgendaAndAssociate(agendaId, associateId))
                 .thenReturn(false);
         when(agendaGateway.findById(agendaId))
                 .thenReturn(Optional.of(Agenda.builder().build()));
+        when(userGateway.findBy(associate.getDocument())).thenReturn(Optional.of(new User(ABLE_TO_VOTE)));
 
         try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {
             mockedStatic.when(ZonedDateTime::now).thenReturn(now);
@@ -114,8 +153,8 @@ class AddVoteInAgendaTest {
         final UUID agendaId = UUID.randomUUID();
         final UUID associateId = UUID.randomUUID();
         final ZonedDateTime now = ZonedDateTime.now();
-        when(associateGateway.findById(associateId))
-                .thenReturn(Optional.of(Associate.builder().build()));
+        final Associate associate = Associate.builder().document("12345678900").build();
+        when(associateGateway.findById(associateId)).thenReturn(Optional.of(associate));
         when(agendaVoteGateway.existsByAgendaAndAssociate(agendaId, associateId))
                 .thenReturn(false);
         when(agendaGateway.findById(agendaId))
@@ -124,6 +163,7 @@ class AddVoteInAgendaTest {
                                 .endAt(now.minusSeconds(1))
                                 .build())
                         .build()));
+        when(userGateway.findBy(associate.getDocument())).thenReturn(Optional.of(new User(ABLE_TO_VOTE)));
 
         try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {
             mockedStatic.when(ZonedDateTime::now).thenReturn(now);
@@ -142,7 +182,7 @@ class AddVoteInAgendaTest {
                 .lastAgendaSession(
                         AgendaSession.builder().endAt(now.plusSeconds(1)).build())
                 .build();
-        final Associate associate = Associate.builder().build();
+        final Associate associate = Associate.builder().document("12345678900").build();
         final AgendaVote expectedResult =
                 AgendaVote.builder().id(UUID.randomUUID()).build();
         when(associateGateway.findById(associateId)).thenReturn(Optional.of(associate));
@@ -150,6 +190,7 @@ class AddVoteInAgendaTest {
                 .thenReturn(false);
         when(agendaGateway.findById(agendaId)).thenReturn(Optional.of(agenda));
         when(agendaVoteGateway.save(agendaVoteCaptor.capture())).thenReturn(expectedResult);
+        when(userGateway.findBy(associate.getDocument())).thenReturn(Optional.of(new User(ABLE_TO_VOTE)));
 
         try (MockedStatic<ZonedDateTime> mockedStatic = mockStatic(ZonedDateTime.class)) {
             mockedStatic.when(ZonedDateTime::now).thenReturn(now);
