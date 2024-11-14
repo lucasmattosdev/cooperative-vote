@@ -1,0 +1,3 @@
+rest:
+  apis:
+    userInfo: https://user-info.herokuapp.com/users

@@ -14,3 +14,7 @@ spring:
     password: ${DB_PASSWORD}
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+
+rest:
+  apis:
+    userInfo:

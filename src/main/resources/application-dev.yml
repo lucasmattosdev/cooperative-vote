@@ -1,0 +1,3 @@
+rest:
+  apis:
+    userInfo: http://localhost:8081/users
