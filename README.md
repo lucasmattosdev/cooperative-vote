@@ -125,4 +125,4 @@ Para gerar um relatório de dependências do Gradle, use o comando:
 
 ## Licença
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para mais detalhes.
+© 2025 [Lucas Mattos](https://lucasmattos.dev). Todos os direitos reservados.
